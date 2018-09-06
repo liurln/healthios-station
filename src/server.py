@@ -12,10 +12,10 @@ import threading
 import json
 from fingerprintSensor import Fingerprint
 
-from hx711 import WeightSensor
-from us015 import HeightSensor
-from pulseSensor import PulseSensor
-from gy906 import TemperatureSensor
+from weight import weight_sensor
+from height import height_sensor
+from pulse import pulse_sensor
+from temperature import temperature_sensor
 
 app = Flask(__name__)
 CORS(app)
@@ -23,10 +23,10 @@ thidSensor = THID()
 fingerprintSensor = Fingerprint()
 threads = []
 
-weightS = WeightSensor()
-heightS = HeightSensor()
-pulseS = PulseSensor()
-tmepS = TemperatureSensor()
+weight_sens = weight_sensor()
+height_sens = height_sensor()
+pulse_sens = pulse_sensor()
+temperature_sens = temperature_sensor()
 
 
 @app.route("/", methods=['GET'])
@@ -75,7 +75,7 @@ def thidStartThread():
 def fingerprintTemplateValidCheck():
     res = {}
     # Call THID to check card inserted
-    res['status'] = fingerprint.fingerprintTemplateValid
+    res['status'] = fingerprintSensor.fingerprintTemplateValid
     return json.dumps(res)
 
 
@@ -83,7 +83,7 @@ def fingerprintTemplateValidCheck():
 def fingerprintStartCreateTemplate():
     res = {}
     # Call THID to check card inserted
-    if fingerprint.fingerprintTemplateValid is False:
+    if fingerprintSensor.fingerprintTemplateValid is False:
         t = threading.Thread(name='THID', target=fingerprintThread)
         threads.append(t)
         t.start()
@@ -95,8 +95,8 @@ def fingerprintStartCreateTemplate():
 def fingerprintValidCheck():
     res = {}
     # Call THID to check card inserted
-    res['status'] = fingerprint.fingerprintTemplateValid
-    res['data'] = fingerprint.fingerprintTemplate
+    res['status'] = fingerprintSensor.fingerprintTemplateValid
+    res['data'] = fingerprintSensor.fingerprintTemplate
     return json.dumps(res)
 
 
@@ -104,7 +104,7 @@ def fingerprintValidCheck():
 def fingerprintScanValidCheck():
     res = {}
     # Call THID to check card inserted
-    res['status'] = fingerprint.fingerprintCharValid
+    res['status'] = fingerprintSensor.fingerprintCharValid
     return json.dumps(res)
 
 
@@ -112,7 +112,7 @@ def fingerprintScanValidCheck():
 def fingerprintStartScan():
     res = {}
     # Call THID to check card inserted
-    if fingerprint.fingerprintTemplateValid is False:
+    if fingerprintSensor.fingerprintTemplateValid is False:
         t = threading.Thread(name='THID', target=fingerprintThread2)
         threads.append(t)
         t.start()
@@ -124,7 +124,7 @@ def fingerprintStartScan():
 def fingerprintCompareValidCheck():
     res = {}
     # Call THID to check card inserted
-    res['status'] = fingerprint.fingerptintCompareValid
+    res['status'] = fingerprintSensor.fingerptintCompareValid
     return json.dumps(res)
 
 
@@ -132,7 +132,7 @@ def fingerprintCompareValidCheck():
 def fingerprintStartCompare():
     res = {}
     # Call THID to check card inserted
-    if fingerprint.fingerprintTemplateValid is False:
+    if fingerprintSensor.fingerprintTemplateValid is False:
         t = threading.Thread(name='THID', target=fingerprintThread3)
         threads.append(t)
         t.start()
@@ -152,9 +152,9 @@ def fingerprintGetData():
 @app.route("/pulse/", methods=['GET'])
 def pulseGetData():
     res = {}
-    res['valid'] = pulseS.isValid
-    res['finish'] = pulseS.isComplete
-    res['data'] = pulseS.getCurrentBPM()
+    res['valid'] = pulse_sens.isValid
+    res['finish'] = pulse_sens.isComplete
+    res['data'] = pulse_sens.current_bpm
     return json.dumps(res)
 
 
@@ -162,7 +162,7 @@ def pulseGetData():
 def pulseValidCheck():
     # Call pulseSensor for check user is using
     res = {}
-    if pulseS.isValid:
+    if pulse_sens.isValid:
         res['status'] = True
     else:
         res['status'] = False
@@ -173,8 +173,8 @@ def pulseValidCheck():
 def pulseIsComplete():
     # Call pulseSensor for check finish checking
     res = {}
-    if pulseS.isComplete:
-        pulseS.stopBPMThread()
+    if pulse_sens.isComplete:
+        pulse_sens.stop_measure()
         res['status'] = True
     else:
         res['status'] = False
@@ -183,7 +183,7 @@ def pulseIsComplete():
 
 @app.route("/pulse/start", methods=['GET'])
 def pulseStart():
-    pulseS.startBPMThread()
+    pulse_sens.start_measure()
     res = {}
     res['status'] = True
     return json.dumps(res)
@@ -192,9 +192,9 @@ def pulseStart():
 @app.route("/thermal/", methods=['GET'])
 def thermalGetData():
     res = {}
-    res['valid'] = tmepS.isValid
-    res['finish'] = tmepS.isComplete
-    res['data'] = tmepS.temperature
+    res['valid'] = temperature_sens.isValid
+    res['finish'] = temperature_sens.isComplete
+    res['data'] = temperature_sens.current_temperature
     return json.dumps(res)
 
 
@@ -202,7 +202,7 @@ def thermalGetData():
 def thermalValidCheck():
     # Call thermalSensor for check user is using
     res = {}
-    res['status'] = tmepS.isValid
+    res['status'] = temperature_sens.isValid
     return json.dumps(res)
 
 
@@ -210,8 +210,8 @@ def thermalValidCheck():
 def thermalIsComplete():
     # Call thermalSensor for check finish checking
     res = {}
-    if tmepS.isComplete:
-        tmepS.stopTempThread()
+    if temperature_sens.isComplete:
+        temperature_sens.stop_measure()
         res['status'] = True
     else:
         res['status'] = False
@@ -221,7 +221,7 @@ def thermalIsComplete():
 @app.route("/thermal/start", methods=['GET'])
 def thermalStart():
     # Call thermalSensor for check finish checking
-    tmepS.startTempThread()
+    temperature_sens.start_measure()
     res = {}
     res['status'] = True
     return json.dumps(res)
@@ -264,9 +264,9 @@ def pressureStart():
 @app.route("/weight/", methods=['GET'])
 def weightGetData():
     res = {}
-    res['valid'] = True
-    res['finish'] = True
-    res['data'] = 66.5
+    res['valid'] = weight_sens.isValid
+    res['finish'] = weight_sens.isComplete
+    res['data'] = weight_sens.current_weight
     return json.dumps(res)
 
 
@@ -274,7 +274,7 @@ def weightGetData():
 def weightValidCheck():
     # Call weightSensor for check user is using
     res = {}
-    res['status'] = True
+    res['status'] = weight_sens.isValid
     return json.dumps(res)
 
 
@@ -282,7 +282,7 @@ def weightValidCheck():
 def weightIsComplete():
     # Call weightSensor for check finish checking
     res = {}
-    res['status'] = True
+    res['status'] = weight_sens.isComplete
     return json.dumps(res)
 
 
@@ -290,6 +290,7 @@ def weightIsComplete():
 def weightStart():
     # Call weightSensor for check finish checking
     res = {}
+    weight_sens.start_measure()
     res['status'] = True
     return json.dumps(res)
 
@@ -297,9 +298,9 @@ def weightStart():
 @app.route("/height/", methods=['GET'])
 def heightGetData():
     res = {}
-    res['valid'] = True
-    res['finish'] = True
-    res['data'] = 176.5
+    res['valid'] = height_sens.isValid
+    res['finish'] = height_sens.isComplete
+    res['data'] = height_sens.current_height
     return json.dumps(res)
 
 
@@ -307,7 +308,7 @@ def heightGetData():
 def heightValidCheck():
     # Call heightSensor for check user is using
     res = {}
-    res['status'] = True
+    res['status'] = height_sens.isValid
     return json.dumps(res)
 
 
@@ -315,7 +316,7 @@ def heightValidCheck():
 def heightIsComplete():
     # Call heightSensor for check finish checking
     res = {}
-    res['status'] = True
+    res['status'] = height_sens.isComplete
     return json.dumps(res)
 
 
@@ -323,6 +324,7 @@ def heightIsComplete():
 def heightStart():
     # Call heightSensor for check finish checking
     res = {}
+    height_sens.start_measure()
     res['status'] = True
     return json.dumps(res)
 
@@ -338,7 +340,7 @@ def thidThread():
 def fingerprintThread():
     print('--------------------------------------------------')
     print('Start Thead FINGERPRINT TEMPLATE!')
-    fingerprint.createTemplate()
+    fingerprintSensor.createTemplate()
     print('Exit Thread FINGERPRINT TEMPLATE!')
     print('--------------------------------------------------')
 
@@ -346,7 +348,7 @@ def fingerprintThread():
 def fingerprintThread2():
     print('--------------------------------------------------')
     print('Start Thead FINGERPRINT TEMPLATE!')
-    fingerprint.scanOneTime()
+    fingerprintSensor.scanOneTime()
     print('Exit Thread FINGERPRINT TEMPLATE!')
     print('--------------------------------------------------')
 
@@ -354,7 +356,7 @@ def fingerprintThread2():
 def fingerprintThread3():
     print('--------------------------------------------------')
     print('Start Thead FINGERPRINT TEMPLATE!')
-    fingerprint.compare()
+    fingerprintSensor.compare()
     print('Exit Thread FINGERPRINT TEMPLATE!')
     print('--------------------------------------------------')
 
